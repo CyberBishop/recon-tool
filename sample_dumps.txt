@@ -1,0 +1,218 @@
+Here is an example of a Python script that could be used to automatically find bugs in a bug bounty program and generate reports:
+
+Copy code
+import requests
+import re
+
+# Set the target URL and other parameters
+target_url = 'http://example.com'
+parameters = {'q': 'test'}
+
+# Send a GET request to the target URL with the specified parameters
+response = requests.get(target_url, params=parameters)
+
+# Check the response status code
+if response.status_code != 200:
+  # Report a potential bug if the status code is not 200 (OK)
+  print('Potential bug found: Invalid status code - {}'.format(response.status_code))
+
+# Check the response headers for potential bugs
+if 'X-Frame-Options' not in response.headers:
+  # Report a potential bug if the 'X-Frame-Options' header is missing
+  print('Potential bug found: Missing "X-Frame-Options" header')
+
+# Check the response body for potential vulnerabilities
+if re.search(r'<script>', response.text):
+  # Report a potential bug if the response body contains the '<script>' tag
+  print('Potential bug found: Response body contains a "<script>" tag')
+  
+In this example, the script sends a GET request to the target URL with the specified parameters and checks the response for potential bugs. If any potential bugs are found, the script prints a report with details about the issue.
+
+This is just a simple example to illustrate the concept, and you may need to adapt it to fit the specific requirements of your bug bounty program. For example, you may want to add additional checks for different types of vulnerabilities, such as SQL injection or cross-site scripting (XSS), and you may want to use a more sophisticated method for reporting the bugs you find.
+
+
+import os
+import subprocess
+
+# Set the target URL
+target_url = 'http://example.com'
+
+# Use amass, sublist3r and findomain to gather subdomains
+amass_output = subprocess.run(['amass', 'enum', '-d', target_url], capture_output=True)
+sublist3r_output = subprocess.run(['sublist3r', '-d', target_url], capture_output=True)
+findomain_output = subprocess.run(['findomain', '-t', target_url], capture_output=True)
+
+# Extract the subdomains from the output of each tool
+subdomains = set()
+subdomains.update(re.findall(r'([\w-]*\.[\w-]*\.\w+)', amass_output.stdout.decode('utf-8')))
+subdomains.update(re.findall(r'([\w-]*\.[\w-]*\.\w+)', sublist3r_output.stdout.decode('utf-8')))
+subdomains.update(re.findall(r'([\w-]*\.[\w-]*\.\w+)', findomain_output.stdout.decode('utf-8')))
+
+# Write the subdomains to a file
+with open('subdomains.txt', 'w') as f:
+  for subdomain in subdomains:
+    f.write(subdomain + '\n')
+
+# Use aquatone to take screenshots of all the subdomains
+aquatone_output = subprocess.run(['aquatone', '-scan', 'subdomains.txt', '-out', 'screenshots'], capture_output=True)
+
+# Use nuclei and sqlmap to try to auto exploit the subdomains
+nuclei_output = subprocess.run(['nuclei', '-targets', 'subdomains.txt', '-templates', 'all'], capture_output=True)
+sqlmap_output = subprocess.run(['sqlmap', '-m', 'subdomains.txt'], capture_output=True)
+
+# Go through the source code of all the subdomains and check for api keys, comments and directories
+for subdomain in subdomains:
+  source_code = requests.get('http://' + subdomain).text
+  # Check for api keys
+  api_keys = re.findall(r'(api_key|access_token|secret_key)\s*=\s*[\'"]([^\'"]+)[\'"]', source_code)
+  for key_type, key_value in api_keys:
+    print('Found {}: {}'.format(key_type, key_value))
+  # Check for comments
+  comments = re.findall(r'<!--(.*?)-->', source_code, re.DOTALL)
+  for comment in comments:
+    print('Found comment: {}'.format(comment))
+  # Check for directories
+  directories = re.findall(r'<a href="(/.*?)"', source_code)
+  for directory
+
+
+  import subprocess
+
+# use amass, sublist3r, and findomain to gather subdomains
+def gather_subdomains(domain):
+  amass_cmd = f"amass enum -d {domain}"
+  sublist3r_cmd = f"sublist3r -d {domain}"
+  findomain_cmd = f"findomain -t {domain}"
+
+  subdomains = []
+
+  # run amass
+  amass_output = subprocess.run(amass_cmd.split(), capture_output=True)
+  amass_output = amass_output.stdout.decode().split("\n")
+  subdomains.extend(amass_output)
+
+  # run sublist3r
+  sublist3r_output = subprocess.run(sublist3r_cmd.split(), capture_output=True)
+  sublist3r_output = sublist3r_output.stdout.decode().split("\n")
+  subdomains.extend(sublist3r_output)
+
+  # run findomain
+  findomain_output = subprocess.run(findomain_cmd.split(), capture_output=True)
+  findomain_output = findomain_output.stdout.decode().split("\n")
+  subdomains.extend(findomain_output)
+
+  # deduplicate subdomains and return
+  return list(set(subdomains))
+
+# use aquatone to take screenshots of all subdomains
+def take_screenshots(subdomains):
+  aquatone_cmd = "aquatone-scan"
+  for subdomain in subdomains:
+    screenshot_cmd = f"{aquatone_cmd} -d {subdomain}"
+    subprocess.run(screenshot_cmd.split())
+
+# use nuclei and sqlmap to try to auto exploit the subdomains
+def exploit_subdomains(subdomains):
+  nuclei_cmd = "nuclei -t /path/to/templates"
+  sqlmap_cmd = "sqlmap -u"
+
+  for subdomain in subdomains:
+    # run nuclei
+    nuclei_output = subprocess.run(f"{nuclei_cmd} {subdomain}", capture_output=True)
+    # run sqlmap
+    sqlmap_output = subprocess.run(f"{sqlmap_cmd} {subdomain}", capture_output=True)
+
+    # print output of both tools
+    print(nuclei_output.stdout)
+    print(sqlmap_output.stdout)
+
+# go through the source code of all subdomains and check for
+# api keys, comments, and directories
+def check_source_code(subdomains):
+  for subdomain in subdomains:
+    # use requests to get the source code of the subdomain
+    source_code = requests.get(subdomain).text
+
+    # search for api keys
+    api_keys = re.findall(r"api_key=\w+", source_code)
+    print(f"API keys found: {api_keys}")
+
+    # search for comments
+    comments = re.findall
+
+
+#!/usr/bin/env python
+
+import os
+
+# Use subfinder, assetfinder, amass, and sublist3r to find subdomains
+os.system("subfinder -d domain.com -o subfinder-output.txt")
+os.system("assetfinder -subs-only domain.com > assetfinder-output.txt")
+os.system("amass enum -d domain.com -o amass-output.txt")
+os.system("sublist3r -d domain.com -o sublist3r-output.txt")
+
+# Use google dorking to search for subdomains
+os.system("python3 dork-cli.py -d domain.com -o dork-output.txt")
+
+# Compare the output of the four tools and create a unified list of subdomains
+subdomains = set()
+
+with open("subfinder-output.txt") as f:
+    for line in f:
+        subdomains.add(line.strip())
+
+with open("assetfinder-output.txt") as f:
+    for line in f:
+        subdomains.add(line.strip())
+
+with open("amass-output.txt") as f:
+    for line in f:
+        subdomains.add(line.strip())
+
+with open("sublist3r-output.txt") as f:
+    for line in f:
+        subdomains.add(line.strip())
+
+with open("dork-output.txt") as f:
+    for line in f:
+        subdomains.add(line.strip())
+
+with open("subdomains.txt", "w") as f:
+    for subdomain in subdomains:
+        f.write(subdomain + "\n")
+
+# Use aquatone to take screenshots of all subdomains
+os.system("cat subdomains.txt | aquatone -out results/aquatone")
+
+# Use masscan to scan for open ports
+os.system("masscan -p1-65535 -iL subdomains.txt -oX ports.xml")
+
+# Use httprobe to check for http headers
+os.system("cat subdomains.txt | httprobe -p 80,443 | tee http-headers.txt")
+
+# Use nuclei to check for common vulnerabilities
+os.system("nuclei -t /path/to/nuclei-templates -l subdomains.txt -o nuclei-output.txt")
+
+# Use sqlmap to check for SQL injection vulnerabilities
+os.system("sqlmap -m subdomains.txt -o sqlmap-output.txt")
+
+# Use waybackurls to check for potential IDOR vulnerabilities
+os.system("cat subdomains.txt | waybackurls | tee waybackurls-output.txt")
+
+# Use github-secrets to check for exposed secrets in public GitHub repositories
+os.system("cat subdomains.txt | github-secrets -o github-secrets-output.txt")
+
+
+To find low-hanging fruits in bug bounty programs, you can use a combination of automated tools and manual techniques. Here are some steps you can follow:
+
+Enumerate subdomains using tools such as subfinder, assetfinder, amass, and sublist3r. You can also use google dorking to search for subdomains.
+Take screenshots of all the subdomains using a tool like aquatone.
+Scan for open ports using a tool like masscan.
+Check for HTTP headers using a tool like httprobe.
+Check for common vulnerabilities using a tool like nuclei.
+Check for SQL injection vulnerabilities using a tool like sqlmap.
+Check for potential IDOR vulnerabilities using a tool like waybackurls.
+Check for exposed secrets in public GitHub repositories using a tool like github-secrets.
+Manually review the results of the automated tools and look for any potential vulnerabilities that may not have been detected by the tools.
+Submit any valid vulnerabilities to the bug bounty program, along with detailed instructions on how to reproduce the issue.
+By following these steps, you can find low-hanging fruits in bug bounty programs and increase your chances of finding and reporting valid vulnerabilities.
