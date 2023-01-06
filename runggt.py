@@ -23,7 +23,7 @@ target_url = sys.argv[1]
 # Sublist3r, amass, findomain, subfinder, assetfinder
 sublist3r_output = subprocess.run(['sublist3r', '-d', target_url], capture_output=True)
 amass_output = subprocess.run(['amass', 'enum', '-d', target_url], capture_output=True)
-findomain_output = subprocess.run(['findomain', '-t', target_url], capture_output=True)
+# findomain_output = subprocess.run(['findomain', '-t', target_url], capture_output=True)
 subfinder_output = subprocess.run(['subfinder', '-d', target_url], capture_output=True)
 assetfinder_output = subprocess.run(['assetfinder', '-subs-only', target_url], capture_output=True)
 
@@ -31,7 +31,7 @@ assetfinder_output = subprocess.run(['assetfinder', '-subs-only', target_url], c
 subdomains = set()
 subdomains.update(re.findall(r'([\w-]*\.[\w-]*\.\w+)', sublist3r_output.stdout.decode('utf-8')))
 subdomains.update(re.findall(r'([\w-]*\.[\w-]*\.\w+)', amass_output.stdout.decode('utf-8')))
-subdomains.update(re.findall(r'([\w-]*\.[\w-]*\.\w+)', findomain_output.stdout.decode('utf-8')))
+# subdomains.update(re.findall(r'([\w-]*\.[\w-]*\.\w+)', findomain_output.stdout.decode('utf-8')))
 subdomains.update(re.findall(r'([\w-]*\.[\w-]*\.\w+)', subfinder_output.stdout.decode('utf-8')))
 subdomains.update(re.findall(r'([\w-]*\.[\w-]*\.\w+)', assetfinder_output.stdout.decode('utf-8')))
 
