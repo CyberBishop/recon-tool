@@ -9,6 +9,7 @@
 ##
 
 # Importing the required modules
+import multiprocessing
 import os
 import subprocess
 import requests
@@ -26,77 +27,92 @@ if not os.path.exists(target_url):
 # Change the working directory to the target folder
 os.chdir(target_url)
 
+
 # Starting Subdomain Enumeration
-def subdomain_enumeration():
-  print('Starting Subdomain Enumeration\n')
+def sublist3r(target_url):
+  subprocess.run(["sublist3r", "-d", target_url, "-o", "sublist3r.txt"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+  print('Sublist3r Done...\n')
 
-  # Use subdomain enumeration tools to find subdomains
-  # Sublist3r, amass, findomain, subfinder, assetfinder
 
-  print('Running Sublist3r...\n')
-  sublist3r_output = subprocess.run(['sublist3r', '-d', target_url], capture_output=True)
+def amass(target_url):
+  subprocess.run(["amass", "enum", "-d", target_url, "-o", "amass.txt"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+  print('Amass Done...\n')
 
-  print('Running Amass...\n')
-  amass_output = subprocess.run(['amass', 'enum', '-d', target_url], capture_output=True)
 
-  print('Running Subfinder...\n')
-  subfinder_output = subprocess.run(['subfinder', '-d', target_url], capture_output=True)
+def subfinder(target_url):
+  subprocess.run(["subfinder", "-d", target_url, "-o", "subfinder.txt"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+  print('Subfinder Done...\n')
 
-  print('Running Assetfinder...\n')
-  assetfinder_output = subprocess.run(['assetfinder', '-subs-only', target_url], capture_output=True)
 
+def assetfinder(target_url):
+  result = subprocess.run(["assetfinder", "-subs-only", "cu.edu.ng"], stdout=subprocess.PIPE, universal_newlines=True, stderr=subprocess.DEVNULL)
+
+  with open("assetfinder.txt", "w") as f:
+      f.write(result.stdout)
+  print('Assetfinder Done...\n')
+
+
+def read_file(filename):
+    with open(filename, "r") as f:
+        return f.read().splitlines()
+
+
+def write_file(lines, filename):
+    with open(filename, "w") as f:
+        for line in lines:
+            f.write(line + "\n")
+
+
+def combine_subdomains():
+  directory = "./" # current directory
   subdomains = set()
-
-  # Combine the output of the tools and extract the subdomains 4th level domains
-  subdomains = re.findall(r'[\w\.-]+\.([\w\.-]+\.[\w]+)', sublist3r_output.stdout.decode('utf-8'))
-  subdomains += re.findall(r'[\w\.-]+\.([\w\.-]+\.[\w]+)', amass_output.stdout.decode('utf-8'))
-  subdomains += re.findall(r'[\w\.-]+\.([\w\.-]+\.[\w]+)', subfinder_output.stdout.decode('utf-8'))
-  subdomains += re.findall(r'[\w\.-]+\.([\w\.-]+\.[\w]+)', assetfinder_output.stdout.decode('utf-8'))
-
-
-
-  # Remove the duplicates
+  for filename in os.listdir(directory):
+      if filename.endswith(".txt"):
+          lines = read_file(filename)
+          subdomains.update(lines)
   subdomains = list(subdomains)
+  subdomains.sort()
+  write_file(subdomains, "subdomains.txt")
 
-  # Write the subdomains to a file
-  with open('subdomains.txt', 'w') as f:
-    for subdomain in subdomains:
-      f.write(subdomain + '\n')
+
+def subdomain_enumeration():
+  # Create a new folder for subdomains
+  if not os.path.exists('subdomains'):
+    os.makedirs('subdomains')
+
+  # Change the working directory to the subdomains folder
+  os.chdir('subdomains')
+
+  with multiprocessing.Pool(4) as p:
+    p.map(sublist3r, [target_url])
+    # p.map(amass, [target_url])
+    p.map(subfinder, [target_url])
+    p.map(assetfinder, [target_url])
+  
+  combine_subdomains()
+
+  # Change the working directory to the target folder
+  os.chdir('..')
+
+
+def massdns_resolution():
+  # Run massdns
+  massdns_command = ["massdns", "-r", "/home/alvin/Tools/resolvers_trusted.txt", "-t", "A", "-o", "J", "subdomains/subdomains.txt"]
+  massdns_output = subprocess.run(massdns_command, stdout=subprocess.PIPE, universal_newlines=True)
+
+  # Run jq
+  jq_command = ["jq", 'select(.type=="A") | .name ']
+  jq_output = subprocess.run(jq_command, input=massdns_output.stdout, stdout=subprocess.PIPE, universal_newlines=True)
+
+  # Run sort
+  sort_command = ["sort", "-u"]
+  sort_output = subprocess.run(sort_command, input=jq_output.stdout, stdout=subprocess.PIPE, universal_newlines=True)
+
+  # Print the output
+  print(sort_output.stdout)
+
 
 # Python init function
 if __name__ == '__main__':
-  subdomain_enumeration()
-
-
-# Note
-### Recon Phase
-  # gobuster dns enum
-  # knockpy
-  # massdns to resolve subdomains ( check for A records) 
-  ## /bin/massdns -r resolvers.txt -t A -o J subdomains.txt | jq 'select(.resp_type=="A") | .query_name' | sort -u
-  # Eyewitness or aquatone for screenshots
-  # python3 crawler.py -d <URL> -l <Levels Deep to Crawl> https://github.com/ghostlulzhacks/crawler/tree/master
-  # Wayback url - tomnomnom, https://github.com/xnl-h4ck3r/waymore
-  # Common crawl https://github.com/ghostlulzhacks/commoncrawl python cc.py -d <Domain>
-  # Then gobuster again, use seclist raft-large-directories.txt
-  # https://github.com/xnl-h4ck3r/xnLinkFinder
-  # https://github.com/GerbenJavado/LinkFinder
-
-### Fingerprinting Phase
-  ## ip / web analysis
-  # shodan
-  # nmap port scan / masscan sudo masscan -p<Port Here> <CIDR Range Here> --exclude <Exclude IP> --banners -oX <Out File Name>
-  # nikto
-  ## Web Analysis
-  # Wappalyzer https://github.com/gokulapap/wappalyzer-cli
-  # Firewall https://github.com/EnableSecurity/wafw00f, https://github.com/0xInfection/Awesome-WAF#known-bypasses
-
-### Exploitation Low hanging fruits
-  # Subdomain takeover https://github.com/haccer/subjack ./subjack -w <Subdomain List> -o results.txt -ssl -c fingerprints.json https://github.com/EdOverflow/can-i-take-over-xyz
-  # Github dorks https://github.com/techgaun/github-dorks/blob/master/github-dorks.txt
-  # https://github.com/ghostlulzhacks/s3brute python amazon-s3-enum.py -w BucketNames.txt -d <Domain Here>
-  # https://github.com/RhinoSecurityLabs/GCPBucketBrute python3 gcpbucketbrute.py -k <Domain Here> -u
-  # site:digitaloceanspaces.com <Domain Here> https://github.com/appsecco/spaces-finder 
-  # page 147
-
-# Add to burp https://github.com/xnl-h4ck3r/GAP-Burp-Extension
+  # subdomain_enumeration()
+  massdns_resolution()

@@ -216,3 +216,68 @@ Check for exposed secrets in public GitHub repositories using a tool like github
 Manually review the results of the automated tools and look for any potential vulnerabilities that may not have been detected by the tools.
 Submit any valid vulnerabilities to the bug bounty program, along with detailed instructions on how to reproduce the issue.
 By following these steps, you can find low-hanging fruits in bug bounty programs and increase your chances of finding and reporting valid vulnerabilities.
+
+
+import re
+
+def extract_subdomains(output):
+    subdomains = []
+    pattern = r"([a-zA-Z0-9_-]+\.)+[a-zA-Z]{2,}"
+    for line in output.splitlines():
+        match = re.match(pattern, line)
+        if match:
+            subdomains.append(match.group())
+    return subdomains
+
+def run_tool(tool, domain):
+    result = subprocess.run([tool, domain], capture_output=True, text=True)
+    return result.stdout
+
+if __name__ == "__main__":
+    domains = ["example.com", "example.net", "example.org"]
+    tools = ["amass", "sublister", "knockpy"]
+    with multiprocessing.Pool(5) as p:
+        results = []
+        for tool in tools:
+            for domain in domains:
+                output = p.apply(run_tool, (tool, domain))
+                subdomains = extract_subdomains(output)
+                results.extend(subdomains)
+        subdomains = list(set(results))
+
+
+
+with open("subdomains.txt", "w") as f:
+    for subdomain in subdomains:
+        f.write(subdomain + "\n")
+
+
+
+import re
+
+def extract_subdomains(output):
+    subdomains = []
+    pattern = r"([a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+\.)+[a-zA-Z]{2,}"
+    for line in output.splitlines():
+        match = re.match(pattern, line)
+        if match:
+            subdomains.append(match.group())
+    return subdomains
+
+def run_tool(tool, domain):
+    result = subprocess.run([tool, domain], capture_output=True, text=True)
+    return result.stdout
+
+if __name__ == "__main__":
+    domains = ["example.com", "example.net", "example.org"]
+    tools = ["amass", "sublister", "knockpy"]
+    with multiprocessing.Pool(5) as p:
+        results = []
+        for tool in tools:
+            for domain in domains:
+                output = p.apply(run_tool, (tool, domain))
+                subdomains = extract_subdomains(output)
+                results.extend(subdomains)
+        subdomains = list(set(results))
+
+
