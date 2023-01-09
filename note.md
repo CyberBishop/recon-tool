@@ -4,7 +4,7 @@
     knockpy
     massdns to resolve subdomains ( check for A records) 
     /bin/massdns -r resolvers.txt -t A -o J subdomains.txt | jq 'select(.resp_type=="A") | .query_name' | sort -u
-    Eyewitness or aquatone for screenshots
+    Eyewitness or aquatone for screenshots - gowitness
     python3 crawler.py -d <URL> -l <Levels Deep to Crawl> https://github.com/ghostlulzhacks/crawler/tree/master
     Wayback url - tomnomnom, https://github.com/xnl-h4ck3r/waymore
     Common crawl https://github.com/ghostlulzhacks/commoncrawl python cc.py -d <Domain>

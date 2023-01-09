@@ -21,11 +21,11 @@ import re
 target_url = sys.argv[1]
 
 # Create a new folder for target
-if not os.path.exists(target_url):
-  os.makedirs(target_url)
+# if not os.path.exists(target_url):
+#   os.makedirs(target_url)
 
 # Change the working directory to the target folder
-os.chdir(target_url)
+# os.chdir(target_url)
 
 
 # Starting Subdomain Enumeration
@@ -85,7 +85,7 @@ def subdomain_enumeration():
 
   with multiprocessing.Pool(4) as p:
     p.map(sublist3r, [target_url])
-    # p.map(amass, [target_url])
+    p.map(amass, [target_url])
     p.map(subfinder, [target_url])
     p.map(assetfinder, [target_url])
   
@@ -96,20 +96,20 @@ def subdomain_enumeration():
 
 
 def massdns_resolution():
-  # Run massdns
-  massdns_command = ["massdns", "-r", "/home/alvin/Tools/resolvers_trusted.txt", "-t", "A", "-o", "J", "subdomains/subdomains.txt"]
-  massdns_output = subprocess.run(massdns_command, stdout=subprocess.PIPE, universal_newlines=True)
+  # Run massdns and save the output to a file
+  subprocess.run(["massdns", "-r", "/home/alvin/Tools/resolvers_trusted.txt", "-t", "A", "-o", "J", "-w", "massdns.json", "subdomains/subdomains.txt"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-  # Run jq
-  jq_command = ["jq", 'select(.type=="A") | .name ']
-  jq_output = subprocess.run(jq_command, input=massdns_output.stdout, stdout=subprocess.PIPE, universal_newlines=True)
+  # Extract the subdomains using jq
+  subdomains = subprocess.run(["jq", 'select(.type=="A") | .name', "massdns.json"], capture_output=True).stdout.decode('utf-8')
 
-  # Run sort
-  sort_command = ["sort", "-u"]
-  sort_output = subprocess.run(sort_command, input=jq_output.stdout, stdout=subprocess.PIPE, universal_newlines=True)
+  subdomains = subdomains.split('\n')
+  # Strip the quotes from the beginning and end of each line and remove the period from the end
+  subdomains = [subdomain.strip('"').rstrip(".") for subdomain in subdomains]
 
-  # Print the output
-  print(sort_output.stdout)
+  # Write the subdomains to a text file
+  with open("resolved_subdomains.txt", "w") as f:
+      for subdomain in subdomains:
+          f.write(subdomain + "\n")
 
 
 # Python init function
